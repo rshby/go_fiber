@@ -54,7 +54,7 @@ func (t *TestHandler) RouteParameterHandler(ctx *fiber.Ctx) error {
 	})
 }
 
-// handler with reuest http-form
+// handler with request http-form
 func (t *TestHandler) RequestFormHandler(ctx *fiber.Ctx) error {
 	// get name from Form
 	name := ctx.FormValue("name", "guest")
@@ -63,5 +63,39 @@ func (t *TestHandler) RequestFormHandler(ctx *fiber.Ctx) error {
 	return ctx.JSON(map[string]any{
 		"status_code": http.StatusOK,
 		"message":     fmt.Sprintf("hello %v", name),
+	})
+}
+
+// hander with request MultiPart Form
+func (t *TestHandler) MultiPartFormHandler(ctx *fiber.Ctx) error {
+	// get data from multipart form
+	file, err := ctx.FormFile("file")
+
+	// jika error ketika read file
+	if err != nil {
+		ctx.SendStatus(http.StatusInternalServerError)
+		return ctx.JSON(map[string]any{
+			"status_code": http.StatusInternalServerError,
+			"message":     err.Error(),
+		})
+	}
+
+	// save file to target folder
+	err = ctx.SaveFile(file, "C:/Users/HP/Documents/go/src/go_fiber/multipart/target/"+file.Filename)
+
+	// jika error ketika save file
+	if err != nil {
+		ctx.SendStatus(http.StatusInternalServerError)
+		return ctx.JSON(map[string]any{
+			"status_code": http.StatusInternalServerError,
+			"message":     err.Error(),
+		})
+	}
+
+	// sucess save file
+	ctx.SendStatus(http.StatusOK)
+	return ctx.JSON(map[string]any{
+		"status_code": http.StatusOK,
+		"message":     "success upload file",
 	})
 }
