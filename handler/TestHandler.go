@@ -1,18 +1,25 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"go_fiber/model/dto"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type TestHandler struct {
+	Validate *validator.Validate
 }
 
 // function Provider
-func NewTestHandler() *TestHandler {
-	return &TestHandler{}
+func NewTestHandler(validate *validator.Validate) *TestHandler {
+	return &TestHandler{
+		Validate: validate,
+	}
 }
 
 func (t *TestHandler) Hello(ctx *fiber.Ctx) error {
@@ -97,5 +104,50 @@ func (t *TestHandler) MultiPartFormHandler(ctx *fiber.Ctx) error {
 	return ctx.JSON(map[string]any{
 		"status_code": http.StatusOK,
 		"message":     "success upload file",
+	})
+}
+
+// handler with request body
+func (t *TestHandler) RequestBodyHandler(ctx *fiber.Ctx) error {
+	// get data from request_body
+	body := ctx.Body()
+	requestBody := dto.LoginRequest{}
+	if err := json.Unmarshal(body, &requestBody); err != nil {
+		ctx.Status(http.StatusInternalServerError)
+		return ctx.JSON(&dto.ApiResponse{
+			StatusCode: http.StatusInternalServerError,
+			Status:     "internal server error",
+			Message:    err.Error(),
+		})
+	}
+
+	// validate
+	if err := t.Validate.StructCtx(ctx.Context(), &requestBody); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			var errorMessage []string
+			for _, fieldError := range validationErrors {
+				msg := fmt.Sprintf("error on field [%v] with tag [%v]", fieldError.Field(), fieldError.Tag())
+				errorMessage = append(errorMessage, msg)
+			}
+
+			ctx.Status(http.StatusBadRequest)
+			return ctx.JSON(&dto.ApiResponse{
+				StatusCode: http.StatusBadRequest,
+				Status:     "bad request",
+				Message:    strings.Join(errorMessage, ", "),
+			})
+		}
+	}
+
+	// success get request body
+	ctx.Status(http.StatusOK)
+	return ctx.JSON(&dto.ApiResponse{
+		StatusCode: http.StatusOK,
+		Status:     "ok",
+		Message:    "success login",
+		Data: map[string]string{
+			"email":    requestBody.Email,
+			"password": requestBody.Password,
+		},
 	})
 }

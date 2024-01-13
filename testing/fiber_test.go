@@ -2,10 +2,13 @@ package testing
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"go_fiber/Routes"
 	handler "go_fiber/handler"
+	"go_fiber/model/dto"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -34,7 +37,8 @@ func TestFiberRouting(t *testing.T) {
 
 func TestHello(t *testing.T) {
 	app := fiber.New()
-	handler := handler.NewTestHandler()
+	validate := validator.New()
+	handler := handler.NewTestHandler(validate)
 
 	// register endpoint
 	app.Get("/hello", handler.Hello)
@@ -85,7 +89,8 @@ func TestHello(t *testing.T) {
 // test Http Request read header and cookies
 func TestGetHttpRequest(t *testing.T) {
 	app := fiber.New()
-	Routes.NewTestRoutes(app)
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
 
 	// test with add header and cookies
 	t.Run("test with header and cookies", func(t *testing.T) {
@@ -136,7 +141,8 @@ func TestGetHttpRequest(t *testing.T) {
 // test with URL parameter
 func TestGetValueURLParams(t *testing.T) {
 	app := fiber.New()
-	Routes.NewTestRoutes(app)
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
 
 	t.Run("test with url parameter", func(t *testing.T) {
 		// create request
@@ -160,7 +166,8 @@ func TestGetValueURLParams(t *testing.T) {
 
 func TestFormParameter(t *testing.T) {
 	app := fiber.New()
-	Routes.NewTestRoutes(app)
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
 
 	t.Run("test with form parameter", func(t *testing.T) {
 		// create request
@@ -199,5 +206,74 @@ func TestFormParameter(t *testing.T) {
 		json.Unmarshal(body, &bodyJson)
 
 		assert.Equal(t, "hello guest", bodyJson["message"].(string))
+	})
+}
+
+// test hit endpoint menggunakan request_body
+func TestRequestBody(t *testing.T) {
+	app := fiber.New()
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
+
+	// test success
+	t.Run("test request body login success", func(t *testing.T) {
+		// create request body
+		req := map[string]any{
+			"email":    "reoshby@gmail.com",
+			"password": "123456",
+		}
+
+		reqJson, err := json.Marshal(&req)
+		if err != nil {
+			fmt.Println(err)
+			t.Fail()
+			return
+		}
+		requestBody := strings.NewReader(string(reqJson))
+
+		// create request
+		request := httptest.NewRequest(http.MethodPost, "/login", requestBody)
+		request.Header.Add("content-type", "application/json")
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get response body
+		all, _ := io.ReadAll(response.Body)
+		responseBody := map[string]any{}
+		json.Unmarshal(all, &responseBody)
+
+		assert.Equal(t, req["email"], responseBody["data"].(map[string]any)["email"].(string))
+		assert.Equal(t, req["password"], responseBody["data"].(map[string]any)["password"].(string))
+	})
+
+	t.Run("test request body login failed", func(t *testing.T) {
+		// create request
+		req := dto.LoginRequest{
+			Email:    "reoshby",
+			Password: "12qw",
+		}
+
+		marshal, err := json.Marshal(&req)
+		if err != nil {
+			fmt.Println(err)
+			t.Fail()
+			return
+		}
+
+		requestBody := strings.NewReader(string(marshal))
+
+		// create request
+		request := httptest.NewRequest(http.MethodPost, "/login", requestBody)
+		request.Header.Add("content-type", "application/json")
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
 	})
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/spf13/viper"
@@ -19,6 +20,9 @@ func main() {
 		log.Fatalf("error cant load config.json")
 	}
 
+	// instance validate
+	validate := validator.New()
+
 	// create instance app fiber
 	app := fiber.New(fiber.Config{
 		IdleTimeout:  3 * time.Second,
@@ -34,7 +38,7 @@ func main() {
 	})
 
 	// routes
-	Routes.NewTestRoutes(app)
+	Routes.NewTestRoutes(app, validate)
 
 	addr := fmt.Sprintf("%v:%v", config.GetString("app.host"), config.GetString("app.port"))
 	if err := app.Listen(addr); err != nil {
