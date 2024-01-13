@@ -1,0 +1,7 @@
+{
+  "app" : {
+    "name" : "go-fiber",
+    "host": "localhost",
+    "port" : "3000"
+  }
+}
