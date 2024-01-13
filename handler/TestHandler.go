@@ -151,3 +151,52 @@ func (t *TestHandler) RequestBodyHandler(ctx *fiber.Ctx) error {
 		},
 	})
 }
+
+// handelr register menggunakan Body Parser
+func (t *TestHandler) RegisterUserBodyParser(ctx *fiber.Ctx) error {
+	// ambil request body
+	request := dto.RegisterUser{}
+	if err := ctx.BodyParser(&request); err != nil {
+		// error bad request
+		ctx.Status(http.StatusBadRequest)
+		return ctx.JSON(&dto.ApiResponse{
+			StatusCode: http.StatusBadRequest,
+			Status:     "bad request",
+			Message:    err.Error(),
+		})
+	}
+
+	// validasi
+	if err := t.Validate.StructCtx(ctx.Context(), &request); err != nil {
+		// error validasi
+		validationErrors, ok := err.(validator.ValidationErrors)
+		if ok {
+			var errorMessage []string
+			for _, fieldError := range validationErrors {
+				message := fmt.Sprintf("error in field [%v] with tag [%v]", fieldError.Field(), fieldError.Tag())
+				errorMessage = append(errorMessage, message)
+			}
+
+			// bad request
+			ctx.Status(http.StatusBadRequest)
+			return ctx.JSON(&dto.ApiResponse{
+				StatusCode: http.StatusBadRequest,
+				Status:     "bad request",
+				Message:    strings.Join(errorMessage, ", "),
+			})
+		}
+	}
+
+	// success
+	ctx.Status(http.StatusOK)
+	return ctx.JSON(&dto.ApiResponse{
+		StatusCode: http.StatusOK,
+		Status:     "ok",
+		Message:    "success",
+		Data: map[string]any{
+			"username": request.Username,
+			"password": request.Password,
+			"name":     request.Name,
+		},
+	})
+}

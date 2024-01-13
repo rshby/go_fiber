@@ -277,3 +277,119 @@ func TestRequestBody(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
 	})
 }
+
+// test endpoint menggunakan body parser otomatis
+func TestBodyParserRequest(t *testing.T) {
+	app := fiber.New()
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
+
+	// test menggunakan json
+	t.Run("test with json request body", func(t *testing.T) {
+		// create request_body
+		req := dto.RegisterUser{
+			Username: "reoshby@gmail.com",
+			Password: "123456",
+			Name:     "Reo Sahobby",
+		}
+		marshal, err := json.Marshal(&req)
+		if err != nil {
+			fmt.Println(err.Error())
+			t.Fail()
+			return
+		}
+		requestBody := strings.NewReader(string(marshal))
+
+		// create HTTP Request
+		request := httptest.NewRequest(http.MethodPost, "/register", requestBody)
+		request.Header.Add("content-type", "application/json")
+
+		// hit and get response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get request body
+		body, _ := io.ReadAll(response.Body)
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusOK, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, req.Username, responseBody["data"].(map[string]any)["username"].(string))
+		assert.Equal(t, req.Password, responseBody["data"].(map[string]any)["password"].(string))
+		assert.Equal(t, req.Name, responseBody["data"].(map[string]any)["name"].(string))
+	})
+
+	// test menggunakan form request
+	t.Run("test with json form body", func(t *testing.T) {
+		// create request
+		requestForm := strings.NewReader("username=reoshby@gmail.com&password=123456&name=Reo Sahobby")
+
+		// create request
+		request := httptest.NewRequest(http.MethodPost, "/register", requestForm)
+		request.Header.Add("content-type", "application/x-www-form-urlencoded")
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get response_body
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			fmt.Println(err.Error())
+			t.Fail()
+			return
+		}
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusOK, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, "reoshby@gmail.com", responseBody["data"].(map[string]any)["username"].(string))
+		assert.Equal(t, "123456", responseBody["data"].(map[string]any)["password"].(string))
+		assert.Equal(t, "Reo Sahobby", responseBody["data"].(map[string]any)["name"].(string))
+	})
+
+	// test bad request parsing
+	t.Run("test with json failed parsing", func(t *testing.T) {
+		// create request_body
+		requestBody := strings.NewReader(`name=reo`)
+
+		// create request
+		request := httptest.NewRequest(http.MethodPost, "/register", requestBody)
+		request.Header.Add("content-type", "application/json")
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+	})
+
+	// test failed bad request
+	t.Run("test with json bad request", func(t *testing.T) {
+		// create request_body
+		req := dto.RegisterUser{
+			Username: "reo",
+		}
+		marshal, err := json.Marshal(&req)
+		if err != nil {
+			fmt.Println(err.Error())
+			t.Fail()
+			return
+		}
+		requestBody := strings.NewReader(string(marshal))
+
+		// create request
+		request := httptest.NewRequest(http.MethodPost, "/register", requestBody)
+		request.Header.Add("content-type", "application/json")
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+	})
+}
