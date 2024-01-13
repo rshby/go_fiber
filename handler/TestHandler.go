@@ -53,3 +53,15 @@ func (t *TestHandler) RouteParameterHandler(ctx *fiber.Ctx) error {
 		"order":       orderId,
 	})
 }
+
+// handler with reuest http-form
+func (t *TestHandler) RequestFormHandler(ctx *fiber.Ctx) error {
+	// get name from Form
+	name := ctx.FormValue("name", "guest")
+
+	ctx.Status(http.StatusOK)
+	return ctx.JSON(map[string]any{
+		"status_code": http.StatusOK,
+		"message":     fmt.Sprintf("hello %v", name),
+	})
+}

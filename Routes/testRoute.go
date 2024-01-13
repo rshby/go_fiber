@@ -19,4 +19,5 @@ func NewTestRoutes(app *fiber.App) {
 	app.Get("/hello", handler.Hello)
 	app.Get("/request", handler.RequestHandler)
 	app.Get("/user/:userId/order/:orderId", handler.RouteParameterHandler)
+	app.Get("/hello-form", handler.RequestFormHandler)
 }

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -154,5 +155,49 @@ func TestGetValueURLParams(t *testing.T) {
 
 		assert.Equal(t, 1, int(bodyJson["user"].(float64)))
 		assert.Equal(t, 2, int(bodyJson["order"].(float64)))
+	})
+}
+
+func TestFormParameter(t *testing.T) {
+	app := fiber.New()
+	Routes.NewTestRoutes(app)
+
+	t.Run("test with form parameter", func(t *testing.T) {
+		// create request
+		requestBody := strings.NewReader("name=reo")
+		request := httptest.NewRequest(http.MethodGet, "/hello-form", requestBody)
+		request.Header.Add("content-type", "application/x-www-form-urlencoded")
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get response body
+		body, _ := io.ReadAll(response.Body)
+		bodyJson := map[string]any{}
+		json.Unmarshal(body, &bodyJson)
+
+		assert.Equal(t, "hello reo", bodyJson["message"].(string))
+	})
+
+	// test without parameter form -> using default value
+	t.Run("test without form params", func(t *testing.T) {
+		// create request
+		request := httptest.NewRequest(http.MethodGet, "/hello-form", nil)
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get response body
+		body, _ := io.ReadAll(response.Body)
+		bodyJson := map[string]any{}
+		json.Unmarshal(body, &bodyJson)
+
+		assert.Equal(t, "hello guest", bodyJson["message"].(string))
 	})
 }
