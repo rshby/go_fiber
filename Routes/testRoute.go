@@ -24,4 +24,12 @@ func NewTestRoutes(app *fiber.App, validate *validator.Validate) {
 	app.Post("/upload-file", handler.MultiPartFormHandler)
 	app.Post("/login", handler.RequestBodyHandler)
 	app.Post("/register", handler.RegisterUserBodyParser)
+	app.Get("/response-json", handler.ResponseJsonHandler)
+	app.Get("/download", handler.DownloadFile)
+
+	v1 := app.Group("/v1")
+	v1.Get("/test", handler.RoutingGroup)
+
+	hello := app.Group("/hello")
+	hello.Get("/test", handler.RoutingGroup)
 }

@@ -393,3 +393,123 @@ func TestBodyParserRequest(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
 	})
 }
+
+// test handler response-json
+func TestResponseJson(t *testing.T) {
+	app := fiber.New()
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
+
+	// test with query parameters
+	t.Run("response json with parameter", func(t *testing.T) {
+		// create request
+		request, _ := http.NewRequest(http.MethodGet, "/response-json", nil)
+		q := request.URL.Query()
+		q.Add("name", "reo")
+		request.URL.RawQuery = q.Encode()
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get response body
+		body, _ := io.ReadAll(response.Body)
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusOK, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, "your name is [reo]", responseBody["data"].(string))
+	})
+
+	// test without query parameter -> default value
+	t.Run("response json without parameter", func(t *testing.T) {
+		// create request
+		request := httptest.NewRequest(http.MethodGet, "/response-json", nil)
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get response body
+		body, _ := io.ReadAll(response.Body)
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusOK, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, "your name is [guest]", responseBody["data"].(string))
+	})
+}
+
+// test handler download
+func TestDownloadFile(t *testing.T) {
+	app := fiber.New()
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
+
+	// test download file
+	t.Run("test download file", func(t *testing.T) {
+		// create request
+		request := httptest.NewRequest(http.MethodGet, "/download", nil)
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+		assert.Equal(t, "attachment; filename=\"contoh2.txt\"", response.Header.Get("Content-Disposition"))
+
+		// get response body
+		body, err := io.ReadAll(response.Body)
+		assert.Nil(t, err)
+		assert.Contains(t, "test\r\noke", string(body))
+	})
+}
+
+// test handler routing group
+func TestRoutingGroup(t *testing.T) {
+	app := fiber.New()
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
+
+	// test routing v1
+	t.Run("test routing v1", func(t *testing.T) {
+		// create request
+		request := httptest.NewRequest(http.MethodGet, "/v1/test", nil)
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get response body
+		body, _ := io.ReadAll(response.Body)
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, "success routing group", responseBody["message"].(string))
+	})
+
+	// test routing hello
+	t.Run("test routing hello", func(t *testing.T) {
+		// create request
+		request := httptest.NewRequest(http.MethodGet, "/hello/test", nil)
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get response body
+		body, _ := io.ReadAll(response.Body)
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, "success routing group", responseBody["message"].(string))
+	})
+}

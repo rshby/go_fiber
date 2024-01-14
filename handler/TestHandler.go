@@ -200,3 +200,32 @@ func (t *TestHandler) RegisterUserBodyParser(ctx *fiber.Ctx) error {
 		},
 	})
 }
+
+// handler HTTP Response
+func (t *TestHandler) ResponseJsonHandler(ctx *fiber.Ctx) error {
+	// get query params
+	name := ctx.Query("name", "guest")
+
+	// send to response
+	ctx.Status(http.StatusOK)
+	return ctx.JSON(&dto.ApiResponse{
+		StatusCode: http.StatusOK,
+		Status:     "ok",
+		Message:    "success send response json",
+		Data:       fmt.Sprintf("your name is [%v]", name),
+	})
+}
+
+// handler untuk download file
+func (t *TestHandler) DownloadFile(ctx *fiber.Ctx) error {
+	return ctx.Download("C:\\Users\\HP\\Documents\\go\\src\\go_fiber\\multipart\\source\\contoh.txt", "contoh2.txt")
+}
+
+// handler routing group
+func (t *TestHandler) RoutingGroup(ctx *fiber.Ctx) error {
+	return ctx.JSON(&dto.ApiResponse{
+		StatusCode: http.StatusOK,
+		Status:     "ok",
+		Message:    "success routing group",
+	})
+}
