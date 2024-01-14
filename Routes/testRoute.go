@@ -32,4 +32,7 @@ func NewTestRoutes(app *fiber.App, validate *validator.Validate) {
 
 	hello := app.Group("/hello")
 	hello.Get("/test", handler.RoutingGroup)
+
+	// membuat routing untuk static file
+	app.Static("/public", "C:\\Users\\HP\\Documents\\go\\src\\go_fiber\\multipart\\source")
 }

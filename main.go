@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/spf13/viper"
 	"go_fiber/Routes"
+	"go_fiber/handler"
 	"log"
 	"time"
 )
@@ -22,13 +23,22 @@ func main() {
 
 	// instance validate
 	validate := validator.New()
+	errorHandler := handler.NewErrorHandler()
 
 	// create instance app fiber
 	app := fiber.New(fiber.Config{
 		IdleTimeout:  3 * time.Second,
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
+		Prefork:      true,
+		ErrorHandler: errorHandler.ErrorHandler, // override default error handler
 	})
+
+	if fiber.IsChild() {
+		log.Println("im child process")
+	} else {
+		log.Println("im parent process")
+	}
 
 	// use logger to log HTTP request
 	app.Use(logger.New())

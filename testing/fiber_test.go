@@ -513,3 +513,39 @@ func TestRoutingGroup(t *testing.T) {
 		assert.Equal(t, "success routing group", responseBody["message"].(string))
 	})
 }
+
+// test endpoint file static
+func TestEndpointStatic(t *testing.T) {
+	app := fiber.New()
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
+
+	// test access static file
+	t.Run("test static success", func(t *testing.T) {
+		// create request
+		request := httptest.NewRequest(http.MethodGet, "/public/contoh.txt", nil)
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get responsebody
+		body, err := io.ReadAll(response.Body)
+		assert.Nil(t, err)
+		assert.Contains(t, "test\r\noke", string(body))
+	})
+
+	// test access not found
+	t.Run("test static not found", func(t *testing.T) {
+		// create request
+		request := httptest.NewRequest(http.MethodGet, "/public", nil)
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusNotFound, response.StatusCode)
+	})
+}
