@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/template/mustache/v2"
 	"github.com/stretchr/testify/assert"
 	"go_fiber/Routes"
 	handler "go_fiber/handler"
@@ -15,6 +16,34 @@ import (
 	"strings"
 	"testing"
 )
+
+// test initial
+func TestInitial(t *testing.T) {
+	app := fiber.New(fiber.Config{
+		Prefork: true,
+	})
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
+
+	// test endpoint /
+	t.Run("test initial endpoint", func(t *testing.T) {
+		// create request
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get response body
+		body, _ := io.ReadAll(response.Body)
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, "success", responseBody["message"].(string))
+	})
+}
 
 // test routing fiber
 func TestFiberRouting(t *testing.T) {
@@ -547,5 +576,65 @@ func TestEndpointStatic(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, response)
 		assert.Equal(t, http.StatusNotFound, response.StatusCode)
+	})
+}
+
+// test default error handler
+func TestDefaultErrorHandler(t *testing.T) {
+	errorHandler := handler.NewErrorHandler()
+	app := fiber.New(fiber.Config{
+		Prefork:      true,
+		ErrorHandler: errorHandler.ErrorHandler,
+	})
+
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
+
+	// test internal server error
+	t.Run("test error handler internal server error", func(t *testing.T) {
+		// create request
+		request := httptest.NewRequest(http.MethodGet, "/v1/wasd", nil)
+
+		// hit and receive response
+		respoonse, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, respoonse)
+		assert.Equal(t, http.StatusInternalServerError, respoonse.StatusCode)
+
+		// get response body
+		body, _ := io.ReadAll(respoonse.Body)
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusInternalServerError, int(responseBody["status_code"].(float64)))
+		assert.Contains(t, responseBody["message"].(string), "Cannot")
+	})
+}
+
+// test render template mustache
+func TestRenderTemplateView(t *testing.T) {
+	engine := mustache.New("C:/Users/HP/Documents/go/src/go_fiber/view", ".mustache")
+	app := fiber.New(fiber.Config{Prefork: true, Views: engine})
+	validate := validator.New()
+	Routes.NewTestRoutes(app, validate)
+
+	// test endpoint render template
+	t.Run("test render template view", func(t *testing.T) {
+		// create request
+		request := httptest.NewRequest(http.MethodGet, "/v1/view", nil)
+
+		// hit and receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// get response body
+		body, _ := io.ReadAll(response.Body)
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Contains(t, string(body), "GOlang")
+		assert.Contains(t, string(body), "web")
 	})
 }

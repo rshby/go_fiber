@@ -5,6 +5,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/template/mustache/v2"
 	"github.com/spf13/viper"
 	"go_fiber/Routes"
 	"go_fiber/handler"
@@ -25,12 +26,16 @@ func main() {
 	validate := validator.New()
 	errorHandler := handler.NewErrorHandler()
 
+	// engine template mustache
+	engineView := mustache.New("./view", ".mustache")
+
 	// create instance app fiber
 	app := fiber.New(fiber.Config{
 		IdleTimeout:  3 * time.Second,
 		ReadTimeout:  3 * time.Second,
 		WriteTimeout: 3 * time.Second,
 		Prefork:      true,
+		Views:        engineView,
 		ErrorHandler: errorHandler.ErrorHandler, // override default error handler
 	})
 

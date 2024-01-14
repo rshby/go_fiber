@@ -29,10 +29,12 @@ func NewTestRoutes(app *fiber.App, validate *validator.Validate) {
 
 	v1 := app.Group("/v1")
 	v1.Get("/test", handler.RoutingGroup)
+	v1.Get("/view", handler.RenderTemplateView)
 
 	hello := app.Group("/hello")
 	hello.Get("/test", handler.RoutingGroup)
 
 	// membuat routing untuk static file
 	app.Static("/public", "C:\\Users\\HP\\Documents\\go\\src\\go_fiber\\multipart\\source")
+
 }

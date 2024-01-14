@@ -229,3 +229,12 @@ func (t *TestHandler) RoutingGroup(ctx *fiber.Ctx) error {
 		Message:    "success routing group",
 	})
 }
+
+// handler render template mustache
+func (t *TestHandler) RenderTemplateView(ctx *fiber.Ctx) error {
+	return ctx.Render("index", fiber.Map{
+		"title":   "Belajar Fiber",
+		"header":  "Belajar GOlang Fiber",
+		"content": "melalui web ini",
+	})
+}
