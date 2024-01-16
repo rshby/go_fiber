@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/viper"
 	"go_fiber/Routes"
 	"go_fiber/handler"
+	"go_fiber/middleware"
 	"log"
 	"time"
 )
@@ -46,6 +47,8 @@ func main() {
 	}
 
 	// use logger to log HTTP request
+	app.Use(middleware.AuthMiddleware)
+	app.Use("/v1", middleware.OnlyV1Middleware)
 	app.Use(logger.New())
 
 	app.Get("/test", func(ctx *fiber.Ctx) error {
